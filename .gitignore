@@ -1,0 +1,4 @@
+.vagrant
+setup.pyc
+items.db
+client_secrets.json
