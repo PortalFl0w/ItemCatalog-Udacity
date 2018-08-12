@@ -1,5 +1,13 @@
 # GENERAL IMPORTS
-from flask import Flask, render_template, request, redirect, jsonify, url_for, flash
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    jsonify,
+    url_for,
+    flash
+)
 from sqlalchemy import create_engine, asc, exists
 from sqlalchemy.orm import sessionmaker
 from setup import Base, Item, Category, User
@@ -92,8 +100,10 @@ def gconnect():
     stored_access_token = login_session.get('access_token')
     stored_gplus_id = login_session.get('gplus_id')
     if stored_access_token is not None and gplus_id == stored_gplus_id:
-        response = make_response(json.dumps('Current user is already connected.'),
-                                 200)
+        response = make_response(
+            json.dumps('Current user is already connected.'),
+            200
+        )
         response.headers['Content-Type'] = 'application/json'
         return response
 
@@ -115,7 +125,12 @@ def gconnect():
     # Create user in Database if it doesn't already exist.
     user = session.query(User.id).filter_by(gid=gplus_id).scalar() is not None
     if user is False:
-        newUser = User(gid=gplus_id, username=data['name'], picture=data['picture'], email=data['email'])
+        newUser = User(
+            gid=gplus_id,
+            username=data['name'],
+            picture=data['picture'],
+            email=data['email']
+        )
         session.add(newUser)
         session.commit()
 
@@ -123,44 +138,59 @@ def gconnect():
     output += '<h1>Welcome, '
     output += login_session['username']
     output += '!</h1>'
-    output += '<img src="'
+    output += '<img class="login-success-image" src="'
     output += login_session['picture']
-    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
+    output += ' "> '
     flash("you are now logged in as %s" % login_session['username'])
     print "done!"
     return output
 
+
 @app.route('/gdisconnect')
 def gdisconnect():
+    # Revoke access from tokens, log user out of our application.
     access_token = login_session.get('access_token')
     if access_token is None:
         print 'Access Token is None'
-        response = make_response(json.dumps('Current user not connected.'), 401)
+        response = make_response(
+            json.dumps('Current user not connected.'),
+            401
+        )
         response.headers['Content-Type'] = 'application/json'
         return response
     print 'In gdisconnect access token is %s', access_token
     print 'User name is: '
     print login_session['username']
-    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % login_session['access_token']
+    url = ('https://accounts.google.com/o/oauth2/'
+           'revoke?token=%s' % login_session['access_token'])
     print url
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]
     print 'result is '
     print result
     if result['status'] == '200':
+        # if the request was successful, we delete all session data.
         del login_session['access_token']
         del login_session['gplus_id']
         del login_session['username']
         del login_session['email']
         del login_session['picture']
         categories = session.query(Category).order_by(asc(Category.name))
-        return render_template('categories.html', categories=categories, user=login_session)
+        return render_template(
+            'categories.html',
+            categories=categories,
+            user=login_session)
     else:
-        response = make_response(json.dumps('Failed to revoke token for given user.', 400))
+        response = make_response(
+            json.dumps(
+                'Failed to revoke token for given user.',
+                400))
         response.headers['Content-Type'] = 'application/json'
         return response
 
 # JSON APIs to view Category Information
+
+
 @app.route('/category/<int:category_id>/item/JSON')
 def categoryJSON(category_id):
     category = session.query(Category).filter_by(id=category_id).one()
@@ -180,20 +210,20 @@ def categoriesJSON():
     categories = session.query(Category).all()
     return jsonify(categories=[r.serialize for r in categories])
 
-@app.route('/users/JSON')
-def usersJSON():
-    users = session.query(User).all()
-    return jsonify(users=[r.serialize for r in users])
-
 
 # Show all categories
 @app.route('/')
 @app.route('/category/')
 def showCategories():
     categories = session.query(Category).order_by(asc(Category.name))
-    return render_template('categories.html', categories=categories, user=login_session)
+    return render_template(
+        'categories.html',
+        categories=categories,
+        user=login_session)
 
 # Create a new category
+
+
 @app.route('/category/new/', methods=['GET', 'POST'])
 def newCategory():
     if 'username' not in login_session:
@@ -201,39 +231,52 @@ def newCategory():
     if request.method == 'POST':
         if request.form['csrf_token'] != login_session['state']:
             # Cross Site Request Forgery Protection
-            flash('CSRF Token Invalid - Please log out and log back in to refresh token.')
+            flash('CSRF Token Invalid - Please log back in.')
             return redirect(url_for('showCategories'))
-        owner_id = session.query(User.id).filter_by(gid=login_session['gplus_id']).one()[0]
+        owner_id = session.query(
+            User.id).filter_by(
+            gid=login_session['gplus_id']).one()[0]
         newCategory = Category(name=request.form['name'], owner_id=owner_id)
         session.add(newCategory)
         flash('New Category %s Successfully Created' % newCategory.name)
         session.commit()
         return redirect(url_for('showCategories'))
     else:
-        return render_template('newCategory.html', user=login_session, csrf=login_session['state'])
+        return render_template(
+            'newCategory.html',
+            user=login_session,
+            csrf=login_session['state'])
 
 # Edit a category
+
+
 @app.route('/category/<int:category_id>/edit/', methods=['GET', 'POST'])
 def editCategory(category_id):
     if 'username' not in login_session:
         return redirect('/login')
-    user_id = session.query(User.id).filter_by(gid=login_session['gplus_id']).one()[0]
+    user_id = session.query(User.id).filter_by(
+        gid=login_session['gplus_id']).one()[0]
     editedCategory = session.query(
         Category).filter_by(id=category_id).one()
     if user_id != editedCategory.owner_id:
+        # Check if user is allowed to access this resource
         flash("You are not allowed to edit this category.")
         return redirect(url_for('showCategories', category_id=category_id))
     if request.method == 'POST':
         if request.form['csrf_token'] != login_session['state']:
             # Cross Site Request Forgery Protection
-            flash('CSRF Token Invalid - Please log out and log back in to refresh token.')
+            flash('CSRF Token Invalid - Please log back in.')
             return redirect(url_for('showCategories'))
         if request.form['name']:
             editedCategory.name = request.form['name']
             flash('Category Successfully Edited %s' % editedCategory.name)
             return redirect(url_for('showCategories', category_id=category_id))
     else:
-        return render_template('editCategory.html', category=editedCategory, user=login_session, csrf=login_session['state'])
+        return render_template(
+            'editCategory.html',
+            category=editedCategory,
+            user=login_session,
+            csrf=login_session['state'])
 
 
 # Delete a category
@@ -241,23 +284,29 @@ def editCategory(category_id):
 def deleteCategory(category_id):
     if 'username' not in login_session:
         return redirect('/login')
-    user_id = session.query(User.id).filter_by(gid=login_session['gplus_id']).one()[0]
+    user_id = session.query(User.id).filter_by(
+        gid=login_session['gplus_id']).one()[0]
     categoryToDelete = session.query(
         Category).filter_by(id=category_id).one()
     if user_id != categoryToDelete.owner_id:
+        # Check if user is allowed to access this resource
         flash("You are not allowed to delete this category.")
         return redirect(url_for('showCategories', category_id=category_id))
     if request.method == 'POST':
         if request.form['csrf_token'] != login_session['state']:
             # Cross Site Request Forgery Protection
-            flash('CSRF Token Invalid - Please log out and log back in to refresh token.')
+            flash('CSRF Token Invalid - Please log back in.')
             return redirect(url_for('showCategories'))
         session.delete(categoryToDelete)
         flash('%s Successfully Deleted' % categoryToDelete.name)
         session.commit()
         return redirect(url_for('showCategories', category_id=category_id))
     else:
-        return render_template('deleteCategory.html', category=categoryToDelete, user=login_session, csrf=login_session['state'])
+        return render_template(
+            'deleteCategory.html',
+            category=categoryToDelete,
+            user=login_session,
+            csrf=login_session['state'])
 
 # Show a category item
 
@@ -269,7 +318,12 @@ def showItem(category_id):
     owner = session.query(User).filter_by(id=category.owner_id).one()
     items = session.query(Item).filter_by(
         category_id=category_id).all()
-    return render_template('item.html', items=items, category=category, owner=owner, user=login_session)
+    return render_template(
+        'item.html',
+        items=items,
+        category=category,
+        owner=owner,
+        user=login_session)
 
 
 # Create a new item item
@@ -278,41 +332,57 @@ def newItem(category_id):
     if 'username' not in login_session:
         return redirect('/login')
     category = session.query(Category).filter_by(id=category_id).one()
-    user_id = session.query(User.id).filter_by(gid=login_session['gplus_id']).one()[0]
+    user_id = session.query(User.id).filter_by(
+        gid=login_session['gplus_id']).one()[0]
     if category.owner_id != user_id:
+        # Check if user is allowed to access this resource
         flash("You are not allowed to add items to this category.")
         return redirect(url_for('showItem', category_id=category_id))
     if request.method == 'POST':
         if request.form['csrf_token'] != login_session['state']:
             # Cross Site Request Forgery Protection
-            flash('CSRF Token Invalid - Please log out and log back in to refresh token.')
+            flash('CSRF Token Invalid - Please log back in.')
             return redirect(url_for('showCategories'))
-        newItem = Item(name=request.form['name'], description=request.form[
-                           'description'], price=request.form['price'], category_id=category_id, owner_id=user_id)
+        newItem = Item(
+            name=request.form['name'],
+            description=request.form['description'],
+            price=request.form['price'],
+            category_id=category_id,
+            owner_id=user_id)
         session.add(newItem)
         session.commit()
         flash('New Menu %s Item Successfully Created' % (newItem.name))
         return redirect(url_for('showItem', category_id=category_id))
     else:
-        return render_template('newItem.html', category_id=category_id, user=login_session, csrf=login_session['state'])
+        return render_template(
+            'newItem.html',
+            category_id=category_id,
+            user=login_session,
+            csrf=login_session['state'])
 
 # Edit a item item
 
 
-@app.route('/category/<int:category_id>/item/<int:item_id>/edit', methods=['GET', 'POST'])
+@app.route(
+    '/category/<int:category_id>/item/<int:item_id>/edit',
+    methods=[
+        'GET',
+        'POST'])
 def editItem(category_id, item_id):
     if 'username' not in login_session:
         return redirect('/login')
     editedItem = session.query(Item).filter_by(id=item_id).one()
     category = session.query(Category).filter_by(id=category_id).one()
-    user_id = session.query(User.id).filter_by(gid=login_session['gplus_id']).one()[0]
+    user_id = session.query(User.id).filter_by(
+        gid=login_session['gplus_id']).one()[0]
     if user_id != editedItem.owner_id:
+        # Check if user is allowed to access this resource
         flash("You are not allowed to edit this item.")
         return redirect(url_for('showItem', category_id=category_id))
     if request.method == 'POST':
         if request.form['csrf_token'] != login_session['state']:
             # Cross Site Request Forgery Protection
-            flash('CSRF Token Invalid - Please log out and log back in to refresh token.')
+            flash('CSRF Token Invalid - Please log back in.')
             return redirect(url_for('showCategories'))
         if request.form['name']:
             editedItem.name = request.form['name']
@@ -325,31 +395,48 @@ def editItem(category_id, item_id):
         flash('%s Successfully Edited' % request.form['name'])
         return redirect(url_for('showItem', category_id=category_id))
     else:
-        return render_template('editItem.html', category_id=category_id, item_id=item_id, item=editedItem, user=login_session, csrf=login_session['state'])
+        return render_template(
+            'editItem.html',
+            category_id=category_id,
+            item_id=item_id,
+            item=editedItem,
+            user=login_session,
+            csrf=login_session['state'])
 
 
 # Delete a item item
-@app.route('/category/<int:category_id>/item/<int:item_id>/delete', methods=['GET', 'POST'])
+@app.route(
+    '/category/<int:category_id>/item/<int:item_id>/delete',
+    methods=[
+        'GET',
+        'POST'])
 def deleteItem(category_id, item_id):
     if 'username' not in login_session:
         return redirect('/login')
     category = session.query(Category).filter_by(id=category_id).one()
     itemToDelete = session.query(Item).filter_by(id=item_id).one()
-    user_id = session.query(User.id).filter_by(gid=login_session['gplus_id']).one()[0]
+    user_id = session.query(User.id).filter_by(
+        gid=login_session['gplus_id']).one()[0]
     if user_id != itemToDelete.owner_id:
+        # Check if user is allowed to access this resource
         flash("You are not allowed to delete this item.")
         return redirect(url_for('showItem', category_id=category_id))
     if request.method == 'POST':
         if request.form['csrf_token'] != login_session['state']:
             # Cross Site Request Forgery Protection
-            flash('CSRF Token Invalid - Please log out and log back in to refresh token.')
+            flash('CSRF Token Invalid - Please log back in.')
             return redirect(url_for('showCategories'))
         session.delete(itemToDelete)
         session.commit()
         flash('Menu Item Successfully Deleted')
         return redirect(url_for('showItem', category_id=category_id))
     else:
-        return render_template('deleteItem.html', item=itemToDelete, category_id=category_id, user=login_session, csrf=login_session['state'])
+        return render_template(
+            'deleteItem.html',
+            item=itemToDelete,
+            category_id=category_id,
+            user=login_session,
+            csrf=login_session['state'])
 
 
 if __name__ == '__main__':
