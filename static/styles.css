@@ -1,10 +1,10 @@
 * {
-  font-family: "Helvetica Neue Bold", Roboto, Helvetica, Arial, sans-serif;
+  font-family: "Roboto", Helvetica, Arial, sans-serif;
   font-weight: 700;
 }
 
 h1 {
-  font-family: "Helvetica Neue Light", Roboto, Helvetica, Arial, sans-serif;
+  font-family: "Roboto", Helvetica, Arial, sans-serif;
   font-size: 50px;
   color: #EEEEEE;
   line-height: 60px;
@@ -22,7 +22,7 @@ h3 {
 }
 
 p {
-  font-family: "Helvetica Neue", Roboto, Helvetica, Arial, sans-serif;
+  font-family: "Roboto", Helvetica, Arial, sans-serif;
   font-size: 16px;
   color: #7B7573;
   line-height: 24px;
@@ -155,18 +155,19 @@ a {
 .creator {
   padding-right: 20px;
   margin-top: -20px;
-  text-align: right;
+  text-align: center;
   float: right;
 }
 
 .creator img {
-  width: 100px;
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
 }
 
 .creator figcaption {
   font-size: 14px;
-  color: #7B7573;
+  color: #EEEEEE;
   font-weight: 400;
   margin-top: -20px;
 }
@@ -202,6 +203,17 @@ a {
 	display: inline-block;
 }
 
+/* CATEGORY PAGES */
+
+.item-container {
+  margin: 40px;
+}
+
+.item-container .menu-item {
+  width: 25%;
+  display: inline-block;
+}
+
 /* FLASH MESSAGE */
 
 .flash {
@@ -228,6 +240,27 @@ a {
 .flash li {
   list-style-type: none;
   text-align: center;
+}
+
+/* LOGIN PAGE */
+
+body.login {
+  background: #fafafa;
+  position: relative;
+}
+
+.login-window {
+  position: fixed;
+  height: auto;
+  text-align: center;
+  width: 400px;
+  box-shadow: 0px 0px 15px 0px #111;
+  border-radius: 3px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  padding: 25px;
+  background: #f2f2f2;
 }
 
 /* ANIMATIONS */
