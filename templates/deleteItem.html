@@ -1,15 +1,13 @@
-{% extends "main.html" %}
-{% block content %}
-{% include "header.html" %}
+{% extends "main.html" %} {% block content %} {% include "header.html" %}
 <h2> Are you sure you want to delete {{item.name}}? </h2>
 
-<form action="#" method = 'post'>
-	<input type="hidden"  name="csrf_token" value="{{csrf}}">
+<form action="#" method='post'>
+	<input type="hidden" name="csrf_token" value="{{csrf}}">
 	<button type="submit" class="btn btn-default delete" id="submit" type="submit">
 	<span class="glyphicon glyphicon-trash" aria-hidden="true"></span>Delete</button>
-	<a href = "{{url_for('showItem', category_id=category_id)}}">
+	<a href="{{url_for('showItem', category_id=category_id)}}">
 		<div class="btn btn-default delete">
-		<span class="glyphicon glyphicon-remove" aria-hidden="true"></span>Cancel</div>
+			<span class="glyphicon glyphicon-remove" aria-hidden="true"></span>Cancel</div>
 	</a>
 
 </form>

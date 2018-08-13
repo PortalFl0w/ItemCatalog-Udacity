@@ -5,15 +5,15 @@
 		</a>
 	</div>
 	<div class="col-md-6 text-right">
-				{% if user.username %}
-					<p>Welcome, {{user.username}}!</p>
-					<a href="{{url_for('gdisconnect')}}">
-						<p>Sign Out</p>
-					</a>
-				{% else %}
-					<a href="{{url_for('showLogin')}}">
-						<p>Sign In</p>
-					</a>
-				{% endif %}
+		{% if user.username %}
+		<p>Welcome, {{user.username}}!</p>
+		<a href="{{url_for('gdisconnect')}}">
+			<p>Sign Out</p>
+		</a>
+		{% else %}
+		<a href="{{url_for('showLogin')}}">
+			<p>Sign In</p>
+		</a>
+		{% endif %}
 	</div>
 </div>
