@@ -33,6 +33,15 @@ These instructions will get you a copy of the project up and running on your loc
 
 ## Default JSON API Endpoints
 
+URI: ```/category/<int:category_id>/item/JSON```  
+Shows all items inside a category
+
+URI: ```/category/<int:category_id>/item/<int:item_id>/JSON```  
+Show information about a single item
+
+URI: ```/category/JSON```  
+Shows a list of categories
+
 ## Features
 - User Authorization system using Google OAuth2.0
 - Cross-site Request Forgery protection
