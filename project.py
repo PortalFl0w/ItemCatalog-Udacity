@@ -12,6 +12,7 @@ from sqlalchemy import create_engine, asc, exists
 from sqlalchemy.orm import sessionmaker
 from setup import Base, Item, Category, User
 from flask import session as login_session
+from functools import wraps
 import random
 import string
 
@@ -37,6 +38,15 @@ engine = create_engine('sqlite:///items.db?check_same_thread=False')
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
+
+def login_required(f):
+    # Check for log-in status.
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in login_session:
+            return redirect(url_for('showLogin'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Create anti-forgery state token
 @app.route('/login')
@@ -222,12 +232,9 @@ def showCategories():
         user=login_session)
 
 # Create a new category
-
-
 @app.route('/category/new/', methods=['GET', 'POST'])
+@login_required
 def newCategory():
-    if 'username' not in login_session:
-        return redirect('/login')
     if request.method == 'POST':
         if request.form['csrf_token'] != login_session['state']:
             # Cross Site Request Forgery Protection
@@ -251,9 +258,8 @@ def newCategory():
 
 
 @app.route('/category/<int:category_id>/edit/', methods=['GET', 'POST'])
+@login_required
 def editCategory(category_id):
-    if 'username' not in login_session:
-        return redirect('/login')
     user_id = session.query(User.id).filter_by(
         gid=login_session['gplus_id']).one()[0]
     editedCategory = session.query(
@@ -281,9 +287,8 @@ def editCategory(category_id):
 
 # Delete a category
 @app.route('/category/<int:category_id>/delete/', methods=['GET', 'POST'])
+@login_required
 def deleteCategory(category_id):
-    if 'username' not in login_session:
-        return redirect('/login')
     user_id = session.query(User.id).filter_by(
         gid=login_session['gplus_id']).one()[0]
     categoryToDelete = session.query(
@@ -328,9 +333,8 @@ def showItem(category_id):
 
 # Create a new item item
 @app.route('/category/<int:category_id>/item/new/', methods=['GET', 'POST'])
+@login_required
 def newItem(category_id):
-    if 'username' not in login_session:
-        return redirect('/login')
     category = session.query(Category).filter_by(id=category_id).one()
     user_id = session.query(User.id).filter_by(
         gid=login_session['gplus_id']).one()[0]
@@ -368,9 +372,8 @@ def newItem(category_id):
     methods=[
         'GET',
         'POST'])
+@login_required
 def editItem(category_id, item_id):
-    if 'username' not in login_session:
-        return redirect('/login')
     editedItem = session.query(Item).filter_by(id=item_id).one()
     category = session.query(Category).filter_by(id=category_id).one()
     user_id = session.query(User.id).filter_by(
@@ -410,6 +413,7 @@ def editItem(category_id, item_id):
     methods=[
         'GET',
         'POST'])
+@login_required
 def deleteItem(category_id, item_id):
     if 'username' not in login_session:
         return redirect('/login')
